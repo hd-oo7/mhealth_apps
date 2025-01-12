@@ -1,0 +1,227 @@
+country_name,country_code
+United States (US),us
+Antigua & Barbuda (AG),ag
+Argentina (AR),ar
+Aruba (AW),aw
+Bahamas (BS),bs
+Belize (BZ),bz
+Bermuda (BM),bm
+Bolivia (BO),bo
+Brazil (BR),br
+British Virgin Islands (VG),vg
+Canada (CA),ca
+Cayman Islands (KY),ky
+Chile (CL),cl
+Colombia (CO),co
+Costa Rica (CR),cr
+Cuba (CU),cu
+Dominica (DM),dm
+Dominican Republic (DO),do
+Ecuador (EC),ec
+El Salvador (SV),sv
+Grenada (GD),gd
+Guatemala (GT),gt
+Haiti (HT),ht
+Honduras (HN),hn
+Jamaica (JM),jm
+Mexico (MX),mx
+Nicaragua (NI),ni
+Panama (PA),pa
+Paraguay (PY),py
+Peru (PE),pe
+Rest of the world,
+St. Kitts & Nevis (KN),kn
+St. Lucia (LC),lc
+Trinidad & Tobago (TT),tt
+Turks & Caicos Islands (TC),tc
+Uruguay (UY),uy
+Venezuela (VE),ve
+Albania (AL),al
+Algeria (DZ),dz
+Angola (AO),ao
+Armenia (AM),am
+Austria (AT),at
+Azerbaijan (AZ),az
+Bahrain (BH),bh
+Belarus (BY),by
+Belgium (BE),be
+Benin (BJ),bj
+Bosnia & Herzegovina (BA),ba
+Botswana (BW),bw
+Bulgaria (BG),bg
+Burkina Faso (BF),bf
+Cameroon (CM),cm
+Cape Verde (CV),cv
+Chad (TD),td
+Comoros (KM),km
+Congo - Brazzaville (CG),cg
+Congo - Kinshasa (CD),cd
+Croatia (HR),hr
+Cyprus (CY),cy
+Czechia (CZ),cz
+Côte d’Ivoire (CI),ci
+Denmark (DK),dk
+Djibouti (DJ),dj
+Egypt (EG),eg
+Eritrea (ER),er
+Estonia (EE),ee
+Finland (FI),fi
+France (FR),fr
+Gabon (GA),ga
+Gambia (GM),gm
+Georgia (GE),ge
+Germany (DE),de
+Ghana (GH),gh
+Gibraltar (GI),gi
+Greece (GR),gr
+Guinea (GN),gn
+Guinea-Bissau (GW),gw
+Hungary (HU),hu
+Iceland (IS),is
+Iran (IR),ir
+Iraq (IQ),iq
+Ireland (IE),ie
+Israel (IL),il
+Italy (IT),it
+Jordan (JO),jo
+Kazakhstan (KZ),kz
+Kenya (KE),ke
+Kuwait (KW),kw
+Kyrgyzstan (KG),kg
+Latvia (LV),lv
+Lebanon (LB),lb
+Liberia (LR),lr
+Libya (LY),ly
+Liechtenstein (LI),li
+Lithuania (LT),lt
+Luxembourg (LU),lu
+Mali (ML),ml
+Malta (MT),mt
+Mauritius (MU),mu
+Moldova (MD),md
+Monaco (MC),mc
+Morocco (MA),ma
+Mozambique (MZ),mz
+Namibia (NA),na
+Netherlands (NL),nl
+Niger (NE),ne
+Nigeria (NG),ng
+North Macedonia (MK),mk
+Norway (NO),no
+Oman (OM),om
+Poland (PL),pl
+Portugal (PT),pt
+Qatar (QA),qa
+Romania (RO),ro
+Russia (RU),ru
+Rwanda (RW),rw
+San Marino (SM),sm
+Saudi Arabia (SA),sa
+Senegal (SN),sn
+Serbia (RS),rs
+Seychelles (SC),sc
+Sierra Leone (SL),sl
+Slovakia (SK),sk
+Slovenia (SI),si
+Somalia (SO),so
+South Africa (ZA),za
+Spain (ES),es
+Sudan (SD),sd
+Suriname (SR),sr
+Sweden (SE),se
+Switzerland (CH),ch
+Tajikistan (TJ),tj
+Tanzania (TZ),tz
+Togo (TG),tg
+Tunisia (TN),tn
+Turkmenistan (TM),tm
+Türkiye (TR),tr
+Uganda (UG),ug
+Ukraine (UA),ua
+United Arab Emirates (AE),ae
+United Kingdom (GB),uk
+United Kingdom (GB),gb
+Uzbekistan (UZ),uz
+Vatican City (VA),va
+Yemen (YE),ye
+Zambia (ZM),zm
+Zimbabwe (ZW),zw
+Australia (AU),au
+Bangladesh (BD),bd
+Cambodia (KH),kh
+China (CN),cn
+Fiji (FJ),fj
+Hong Kong (HK),hk
+India (IN),in
+Indonesia (ID),id
+Japan (JP),jp
+Laos (LA),la
+Macao (MO),mo
+Malaysia (MY),my
+Maldives (MV),mv
+Micronesia (FM),fm
+Myanmar (Burma) (MM),mm
+Nepal (NP),np
+New Zealand (NZ),nz
+Pakistan (PK),pk
+Papua New Guinea (PG),pg
+Philippines (PH),ph
+Samoa (WS),ws
+Singapore (SG),sg
+Solomon Islands (SB),sb
+South Korea (KR),kr
+Sri Lanka (LK),lk
+Taiwan (TW),tw
+Thailand (TH),th
+Tonga (TO),to
+Vanuatu (VU),vu
+Vietnam (VN),vn
+Afghanistan (AF),af
+Andorra (AD),ad
+Anguilla (AI),ai
+Antarctica (AQ),aq
+Barbados (BB),bb
+Bhutan (BT),bt
+Bouvet Island (BV),bv
+British Indian Ocean Territory (IO),io
+Brunei (BN),bn
+Burundi (BI),bi
+Central African Republic (CF),cf
+Christmas Island (CX),cx
+Cocos (Keeling) Islands (CC),cc
+Cook Islands (CK),ck
+Curaçao (CW),cw
+East Timor (TL),tl
+Equatorial Guinea (GQ),gq
+Eswatini (SZ),sz
+Ethiopia (ET),et
+Falkland Islands (Islas Malvinas) (FK),fk
+French Southern Territories (TF),tf
+Guernsey (GG),gg
+Guyana (GY),gy
+Heard & McDonald Islands (HM),hm
+Isle of Man (IM),im
+Jersey (JE),je
+Kiribati (KI),ki
+Kosovo (XK),xk
+Lesotho (LS),ls
+Madagascar (MG),mg
+Malawi (MW),mw
+Mauritania (MR),mr
+Mongolia (MN),mn
+Montenegro (ME),me
+Montserrat (MS),ms
+Nauru (NR),nr
+Niue (NU),nu
+Norfolk Island (NF),nf
+Palestinian Territory (PS),ps
+Pitcairn (PN),pn
+Saba (BQ),bq
+Saint Helena Ascension and Tristan da Cunha (SH),sh
+South Georgia and The Sandwich Islands (GS),gs
+St. Vincent & Grenadines (VC),vc
+São Tomé & Príncipe (ST),st
+Tokelau (TK),tk
+Tuvalu (TV),tv
+US Minor Outlying Islands (UM),um
+Western Sahara (EH),eh
