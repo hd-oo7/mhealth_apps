@@ -107,7 +107,3 @@ This will open Jupyter Notebook in your default web browser.
 ### Step 4: Run the Analysis
 In Jupyter Notebook, navigate to the notebook file (e.g., `01_mhealth_apps.ipynb`) and run the cells to perform the analysis. You can execute a cell by selecting it and pressing `Shift + Enter`.
 
-
-## Cite the code:
-[![DOI](https://zenodo.org/badge/905789572.svg)](https://doi.org/10.5281/zenodo.14632265)
-
