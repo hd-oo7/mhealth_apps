@@ -36,8 +36,8 @@ We compared privacy claims from different sources to highlight discrepancies and
 - Identification of vulnerabilities through static and dynamic analyses.
 - Discrepancies in privacy claims: Highlighted inconsistencies between privacy policies, Data Safety disclosures, and observed data handling practices.
 - Key findings: 
-  - Free apps tend to offer more transparency, while paid apps excel in compliance.
-  - Top-grossing apps lead in privacy and data sharing, while non-top-grossing apps focus on security and consistency.
+  - Free apps tend to offer better privacy and security, while paid apps excel in data-sharing practices.
+  - Top-grossing apps lead in privacy and data sharing, while non-top-grossing apps more consistent in transparency and security.
   - CDC-endorsed apps showed discrepancies between their privacy policies and data safety disclosures.
 - Ethical considerations: Ensured reproducibility of results without disclosing specific app information. The code is publicly available on [GitHub](https://github.com/hdoo7/mhealth_apps).
 
