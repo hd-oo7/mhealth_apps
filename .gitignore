@@ -1,0 +1,9 @@
+.DS_Store
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+
+# mSCAN's own generated output -- not part of the release
+mscan/results/
+data/
+.env

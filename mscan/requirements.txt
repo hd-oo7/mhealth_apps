@@ -1,0 +1,6 @@
+requests
+beautifulsoup4
+selenium
+uiautomator2
+pandas
+google-generativeai
