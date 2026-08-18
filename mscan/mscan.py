@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """mSCAN: single-app, four-source mHealth privacy audit.
 
-The lowercase-m prefix mirrors how the paper itself styles \\textit{mHealth}
-(mobile health). The rest is drawn one letter per source: Data **S**afety,
-permissions/tra**c**kers, policy retriev**a**l, **n**etwork traffic.
+mSCAN -- multi-source Security & Privacy Cross-context Auditing Network tool.
 
 Given an app_id, runs the same four evidence-source extractors used to build
 the paper's corpus (Google Play Data Safety, privacy policy, static

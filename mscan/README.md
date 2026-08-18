@@ -1,7 +1,7 @@
 # mSCAN
 
-*The **m** mirrors how the paper styles* mHealth *(mobile health); the rest is
-Data **S**afety, permissions/tra**c**kers, policy retriev**a**l, **n**etwork traffic.*
+**mSCAN** -- **m**ulti-source **S**ecurity & Privacy **C**ross-context
+**A**uditing **N**etwork tool.
 
 A single-app, four-source privacy- and security-audit tool for Android
 mHealth apps. Given an `app_id` (or a list of them) and a country, mSCAN
