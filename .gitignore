@@ -3,7 +3,15 @@
 __pycache__/
 *.pyc
 
-# mSCAN's own generated output -- not part of the release
+# generated output -- not part of the release
 mscan/results/
-data/
+figures/
+
+# data/ holds both the raw corpus (real app_id, not released -- see Ethics
+# appendix's no-re-identification commitment) and the two anonymized files
+# that ship with this release. Ignore everything, then allow just those two.
+data/*
+!data/anonymized_app_list.csv
+!data/mhealth_apps_metrics_anonymized.csv
+
 .env

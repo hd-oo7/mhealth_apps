@@ -11,11 +11,13 @@ emits one consolidated record per app in a shared canonical taxonomy. If
 network traffic was captured, it also computes three per-app privacy
 metrics (ADII, DGI, PCLR) directly from that record.
 
-This repository contains the tool only: `mscan/`, the CLI, its Docker
-packaging, and the small set of vendored modules it depends on
-(`mscan/collection/`, `mscan/mhealth/`). It does not contain the derived
-dataset, the batch collection pipeline, or the analysis code used to
-produce the paper's reported results.
+This repository contains two things: `mscan/` (the tool itself -- see below)
+and `analysis_scripts/` + `data/` (the code and anonymized dataset behind the
+paper's Sec. 6 results, figures, and open-science release -- see
+`analysis_scripts/README.md`). It does not contain the batch collection
+pipeline, raw network traffic, or any per-app intermediate file that could
+re-identify a specific application, per the paper's Ethics Considerations
+and Open Science sections.
 
 ## Quick start
 
@@ -47,6 +49,15 @@ mscan/                       the tool -- see mscan/README.md
     taxonomy.py              canonical data-type taxonomy and sensitivity weights
     parsing.py               frequency-map parsing helpers metrics.py depends on
   docker/                    container packaging (Dockerfile, docker-compose.yml, README.md)
+
+analysis_scripts/            paper results, figures, and release tooling -- see analysis_scripts/README.md
+  01-11                      per-topic notebooks (Sec. 3-6); need the internal raw corpus
+  12-14                      accuracy-correction pass; run directly on the released data below
+  15-16                      generate the two files in data/ below from the internal raw corpus
+
+data/
+  anonymized_app_list.csv                one row per app, keyed by anon_app_id, no direct identifiers
+  mhealth_apps_metrics_anonymized.csv    full app-country-state metrics dataset behind every table/figure (Git LFS)
 ```
 
 `mscan/collection/` and `mscan/mhealth/` are not standalone pipelines here;
@@ -54,6 +65,26 @@ they are exactly the modules `mscan/record.py` and
 `mscan/sources/network_traffic.py` import, vendored inside `mscan/` so the
 whole tool is self-contained -- clone or copy `mscan/` on its own and it
 works without the rest of this repository.
+
+`data/mhealth_apps_metrics_anonymized.csv` is ~140MB and tracked with
+[Git LFS](https://git-lfs.com); install `git-lfs` and run `git lfs pull` (or
+just `git clone`, if your Git already has the LFS filter configured) to
+fetch its actual contents rather than a pointer file.
+
+## Reproducing the paper's results
+
+```bash
+cd analysis_scripts
+pip install -r requirements.txt
+python3 12_verification_and_corrections.py     # Sec. 6 statistics
+python3 13_generate_figures.py                 # figures/*.pdf
+python3 14_mscan_integration_verification.py   # mSCAN vs. paper cross-check
+```
+
+All three read `data/mhealth_apps_metrics_anonymized.csv` directly; nothing
+else needs to be downloaded or configured. See `analysis_scripts/README.md`
+for what every script and notebook produces and which ones need the
+authors' internal (unreleased) corpus instead.
 
 ## Privacy metrics
 
