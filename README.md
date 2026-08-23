@@ -13,8 +13,7 @@ metrics (ADII, DGI, PCLR) directly from that record.
 
 This repository contains two things: `mscan/` (the tool itself -- see below)
 and `analysis_scripts/` + `data/` (the code and anonymized dataset behind the
-paper's Sec. 6 results, figures, and open-science release -- see
-`analysis_scripts/README.md`). It does not contain the batch collection
+paper's Sec. 6 results, figures, etc.). It does not contain the batch collection
 pipeline, raw network traffic, or any per-app intermediate file that could
 re-identify a specific application, per the paper's Ethics Considerations
 and Open Science sections.
@@ -41,9 +40,6 @@ mscan/                       the tool -- see mscan/README.md
   mscan.py                   CLI entrypoint
   record.py                  merges the four sources into one record + computes metrics
   sources/                   one collector per evidence source
-  collection/
-    wireguard_vpn.py         install/capture/uninstall automation on the emulator
-    traffic_analyzer.py      offline extraction of observed data types from captured traffic
   mhealth/
     metrics.py               ADII / DGI / PCLR definitions
     taxonomy.py              canonical data-type taxonomy and sensitivity weights
@@ -60,12 +56,6 @@ data/
   mhealth_apps_metrics_anonymized.csv    full app-country-state metrics dataset behind every table/figure (Git LFS)
 ```
 
-`mscan/collection/` and `mscan/mhealth/` are not standalone pipelines here;
-they are exactly the modules `mscan/record.py` and
-`mscan/sources/network_traffic.py` import, vendored inside `mscan/` so the
-whole tool is self-contained -- clone or copy `mscan/` on its own and it
-works without the rest of this repository.
-
 `data/mhealth_apps_metrics_anonymized.csv` is ~140MB and tracked with
 [Git LFS](https://git-lfs.com); install `git-lfs` and run `git lfs pull` (or
 just `git clone`, if your Git already has the LFS filter configured) to
@@ -78,13 +68,7 @@ cd analysis_scripts
 pip install -r requirements.txt
 python3 12_verification_and_corrections.py     # Sec. 6 statistics
 python3 13_generate_figures.py                 # figures/*.pdf
-python3 14_mscan_integration_verification.py   # mSCAN vs. paper cross-check
 ```
-
-All three read `data/mhealth_apps_metrics_anonymized.csv` directly; nothing
-else needs to be downloaded or configured. See `analysis_scripts/README.md`
-for what every script and notebook produces and which ones need the
-authors' internal (unreleased) corpus instead.
 
 ## Privacy metrics
 

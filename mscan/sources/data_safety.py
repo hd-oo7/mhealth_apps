@@ -1,9 +1,4 @@
 """Google Play Data Safety scraping for a single app.
-
-Reuses the extraction logic from code/scrappers/step4_data_safety_scrapper.ipynb
-(data-shared / data-collected via plain HTTP, security practices via Selenium,
-since that block is JS-rendered), adapted to run on demand for one app_id
-instead of batch-processing the whole corpus.
 """
 
 from __future__ import annotations

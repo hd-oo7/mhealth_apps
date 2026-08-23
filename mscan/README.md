@@ -56,10 +56,10 @@ You also need, on this machine:
 - **`ANDROID_SDK_ROOT`** (or `ANDROID_HOME`); defaults to
   `~/Library/Android/sdk` if unset.
 
-mSCAN vendors its own install/capture/extract automation
-(`collection/wireguard_vpn.py`, `collection/traffic_analyzer.py`) and metric
-definitions (`mhealth/`), so this folder is self-contained: copy or clone it
-on its own and it works without anything else from this repository.
+mSCAN's install/capture/extract automation is implemented directly in
+`sources/network_traffic.py`, and its metric definitions live in `mhealth/`,
+so this folder is self-contained: copy or clone it on its own and it works
+without anything else from this repository.
 
 ## Usage
 
@@ -74,10 +74,15 @@ python3 mscan.py --app-ids-file my_apps.txt --country us \
 # Network traffic only, VPN check skipped (e.g. testing without a real VPN)
 python3 mscan.py --app-ids com.example.healthapp --country jp \
     --sources network_traffic --skip-vpn-check
+
+# One-off spot check, no --out: prints the record to stdout instead of
+# writing a file
+python3 mscan.py --app-ids com.example.healthapp --country us \
+    --sources data_safety,privacy_policy,permissions_trackers
 ```
 
-Output is appended, one JSON object per line, to
-`results/results_<country>.jsonl`. Each record looks like:
+Pass `--out <path-prefix>` to append results, one JSON object per line, to
+`<path-prefix>_<country>.jsonl` instead. Each record looks like:
 
 ```json
 {
@@ -107,7 +112,7 @@ sources/
   data_safety.py             Google Play Data Safety (shared/collected data, security practices)
   privacy_policy.py          policy link discovery, retrieval, LLM-structured extraction
   permissions_trackers.py    static permissions/trackers via exodus-privacy.eu.org
-  network_traffic.py         install/capture/uninstall (via wireguard_vpn.py) + extraction (via traffic_analyzer.py)
+  network_traffic.py         install/capture/uninstall automation + offline log extraction, self-contained
 ```
 
 ## A note on scope

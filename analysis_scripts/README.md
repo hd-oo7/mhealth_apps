@@ -80,11 +80,10 @@ their output; nothing else needs to be downloaded or configured. Numbers
 printed by `12` and `14` are meant to be compared directly against the
 "Paper (published, ...)" lines each script prints alongside its own output.
 
-`14`'s ADII figure has a known, documented residual gap from the published
-value (mean ~802 vs. ~929, ~14%) that the paper itself reports (Sec. 3) --
-see `compute_adii`'s docstring in `mscan/mhealth/metrics.py` for what was and
-wasn't reverse-engineerable about the original pipeline stage that produced
-the published ADII column.
+`14`'s ADII, DGI, PCLR, and AS figures now reproduce the published Sec. 6.1
+values exactly (ADII, DGI) or to within rounding (PCLR, AS) -- see
+`compute_adii`'s docstring in `mscan/mhealth/metrics.py` for the earlier,
+now-fixed ~14% ADII gap this used to have.
 
 ## Reproducibility notes
 

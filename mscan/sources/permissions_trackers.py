@@ -1,9 +1,5 @@
 """Static APK permission and tracker extraction for a single app, via
 $\\varepsilon$xodus (reports.exodus-privacy.eu.org).
-
-Reuses the extraction logic from
-code/scrappers/step2_permission_tracker_scrapper.ipynb, adapted to run on
-demand for one app_id.
 """
 
 from __future__ import annotations

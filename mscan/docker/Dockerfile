@@ -7,8 +7,9 @@
 # this container reaches it over adb (see docker/README.md for the one-time
 # host-side setup that can't be containerized away).
 #
-# mSCAN is self-contained (mhealth/ and collection/ live inside this
-# directory), so build from `mscan/` itself:
+# mSCAN is self-contained (mhealth/ lives inside this directory, and
+# sources/network_traffic.py has no external mscan-internal dependencies),
+# so build from `mscan/` itself:
 #     cd mscan && docker build -f docker/Dockerfile -t mscan .
 
 FROM python:3.11-slim-bookworm
@@ -35,8 +36,8 @@ COPY requirements.txt /app/mscan/requirements.txt
 RUN pip install --no-cache-dir -r /app/mscan/requirements.txt \
     && pip install --no-cache-dir mitmproxy frida-tools
 
-# --- the tool itself. mscan/ is self-contained (mhealth/ and collection/
-#     are regular subpackages of it), so one copy picks up everything -------
+# --- the tool itself. mscan/ is self-contained (mhealth/ is the only
+#     subpackage it depends on), so one copy picks up everything -----------
 COPY . /app/mscan/
 
 # --- writable output/cache locations, meant to be bind-mounted so results

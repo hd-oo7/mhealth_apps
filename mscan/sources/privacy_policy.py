@@ -1,11 +1,4 @@
 """Privacy-policy retrieval and structured extraction for a single app.
-
-Retrieval reuses the link-discovery + scrape logic from
-code/scrappers/step3_privacy_policy_scrapper.ipynb. Structured extraction
-reuses the question set from code/gemini_policy_analysis.py, so
-the declared-data answers land in the same `data_safety_data_collected` / `data_safety_data_shared`
-vocabulary the rest of the pipeline (mhealth.taxonomy.canonicalize_declared)
-already expects.
 """
 
 from __future__ import annotations
@@ -110,9 +103,7 @@ def _parse_answers(raw: str) -> dict[str, str]:
 
 
 def analyze_with_llm(app_id: str, policy_text: str) -> dict | None:
-    """Run the same 12-question extraction used for the full corpus, and
-    normalize Q1/Q3 into `data_safety_data_collected` / `data_safety_data_shared` strings.
-
+    """
     Requires GEMINI_API_KEY in the environment; returns None (with a clear
     message) rather than raising if it isn't set, so callers can proceed
     without the LLM-parsed side of the record.

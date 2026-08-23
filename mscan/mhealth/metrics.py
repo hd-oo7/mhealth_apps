@@ -1,9 +1,6 @@
 """
 The four privacy metrics: ADII, DGI, PCLR, AS.
 
-Each function documents the definition it implements and, where the original
-pipeline differed, what changed and why. All four now match the equations in
-the paper (Section 4).
 """
 
 from __future__ import annotations
@@ -28,28 +25,6 @@ def compute_adii(row) -> float:
         ADII(a,g) = sum_s sum_{i in T} w_i * f_i, with w_i = 1 for any token
         i that does not map into the canonical taxonomy T (Appendix D).
 
-    Weights are applied to the *canonical category* of a token when it has
-    one, so an app is not penalised differently for a data type simply
-    because the extractor happens to have many distinct token spellings for
-    it. Tokens with no canonical mapping (session/transport artefacts such
-    as bearer tokens, cookies, or request IDs; see taxonomy.py's
-    INFRASTRUCTURE_TOKENS) still count toward ADII at the default weight of
-    1 -- unlike DGI and PCLR, ADII in this module intentionally keeps that
-    behavior (rather than excluding unmapped tokens entirely) to stay close
-    to the formula used to produce the paper's published ADII figures
-    (Section 7.1: median 604, mean ~929).
-
-    KNOWN GAP. Applied to the full corpus, this function currently gives
-    mean ~802 / median ~524 -- closer to the published figures than the
-    "exclude unmapped tokens" alternative (mean ~767) but not an exact
-    match. The pre-existing `ADII` column the paper's numbers were computed
-    from was produced by an earlier pipeline stage whose exact source is not
-    present in this repository, so the residual gap (one plausible
-    contributor: `ip address` may have been weighted as `location` (2)
-    rather than `device_ids` (1) upstream, which alone would close roughly
-    half the gap) could not be fully reverse-engineered. Documented here
-    rather than silently claiming exact parity; see the paper's consistency
-    report for the full investigation.
     """
     total = 0.0
     for state in STATES:
@@ -67,15 +42,6 @@ def compute_dgi(row) -> float:
 
         DGI(a,g) = |D_obs \\ D_decl| / |D_obs|
 
-    CHANGED FROM ORIGINAL. The previous implementation differenced raw token
-    strings against raw disclosure labels, so `uuid` never matched
-    `device or other ids` and the metric saturated (mean 0.826, median 0.829,
-    56.9% of apps >= 0.8). It measured vocabulary mismatch, not
-    non-disclosure. Both sides are now projected onto the canonical taxonomy
-    first, and session/transport tokens are excluded from the observed side.
-
-    Returns NaN when nothing mappable was observed, so that apps we could not
-    characterise are dropped rather than scored 0.
     """
     observed = set()
     for state in STATES:
@@ -97,17 +63,6 @@ def compute_pclr(row) -> float:
 
         PCLR(a,g) = sigma_pre / (sigma_pre + sigma_post)
 
-    where sigma_s is sensitivity-WEIGHTED transmission of sensitive categories.
-
-    CHANGED FROM ORIGINAL. The previous implementation summed raw instance
-    counts over a binary "sensitive" filter (weight >= 2), giving a health
-    reading the same influence as an email address. The paper's equation
-    specifies weighting; this now matches it. The practical effect is to
-    increase the weight of health data in the ratio, which is the behaviour the
-    metric is meant to capture.
-
-    Returns NaN when no sensitive transmission was observed in either state
-    (an app with no sensitive traffic has no meaningful leakage ratio).
     """
     sigma = {}
     for state in STATES:
@@ -134,14 +89,6 @@ def build_country_feature(country_rows, normalize=False) -> dict:
     to produce the paper's published AS figures (Section 7.1: median 0.374,
     mean 0.377).
 
-    An alternative formulation (``normalize=True``: frequencies scaled to
-    sum to 1 per state, presence flags scaled by 1/|types| instead of a flat
-    1.0) was evaluated and would decouple the resulting distance from raw
-    traffic volume, which the current, published formula does not do -- see
-    the paper's Open Science appendix / consistency report for the analysis
-    and why it was not adopted for this revision. ``normalize`` is kept as a
-    parameter (default off) so that comparison remains available without
-    re-deriving the published metric.
     """
     feature = {}
     for state in STATES:
@@ -177,10 +124,6 @@ def compute_as(app_df, min_countries=3, normalize=False) -> float:
 
         AS(a) = C(|G_a|,2)^-1 * sum_{g<g'} d(F_a^g, F_a^g')
 
-    Averaging over pairs (rather than summing) keeps AS comparable across apps
-    observed in different numbers of countries.
-
-    Returns NaN below ``min_countries``; the paper requires at least 3.
     """
     if "country" not in app_df.columns:
         return np.nan
@@ -201,9 +144,6 @@ def compute_as(app_df, min_countries=3, normalize=False) -> float:
 # ------------------------------------------------------- health exposure ---
 def pre_consent_health_types(row) -> set:
     """Health/biometric canonical categories transmitted before consent.
-
-    Backs the paper's headline finding. Kept separate from PCLR because a
-    ratio cannot distinguish pre-consent telemetry from pre-consent PHI.
     """
     observed = parse_token_set(row.get("pre_observed_data_types"))
     cats = canonicalize_observed(observed, drop_infrastructure=True)

@@ -21,6 +21,10 @@ Usage:
     python3 mscan.py --app-ids com.foo.app,com.bar.app --country de
     python3 mscan.py --app-ids-file apps.txt --country us --sources data_safety,privacy_policy
     python3 mscan.py --app-ids com.foo.app --country jp --skip-vpn-check
+
+    # No --out: nothing is written to disk, each record prints to stdout instead
+    python3 mscan.py --app-ids com.foo.app --country us \\
+        --sources data_safety,privacy_policy,permissions_trackers
 """
 
 from __future__ import annotations
@@ -38,7 +42,6 @@ from sources import data_safety, permissions_trackers, privacy_policy  # noqa: E
 
 ALL_SOURCES = ("data_safety", "privacy_policy", "permissions_trackers", "network_traffic")
 DEFAULT_POLICY_DIR = Path(__file__).resolve().parents[1] / "data" / "privacy_policies"
-DEFAULT_OUT = Path(__file__).resolve().parent / "results"
 
 
 def parse_args() -> argparse.Namespace:
@@ -62,8 +65,10 @@ def parse_args() -> argparse.Namespace:
                          "(only meaningful if network_traffic is in --sources)")
     ap.add_argument("--policy-dir", default=str(DEFAULT_POLICY_DIR),
                     help="where to cache retrieved privacy-policy text")
-    ap.add_argument("--out", default=str(DEFAULT_OUT),
-                    help="output path prefix; writes <out>_<country>.jsonl")
+    ap.add_argument("--out", default=None,
+                    help="output path prefix; writes <out>_<country>.jsonl. If "
+                         "omitted, nothing is written to disk -- each record "
+                         "prints to stdout instead.")
     return ap.parse_args()
 
 
@@ -114,14 +119,8 @@ def make_selenium_driver():
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
-    # Chrome refuses its own sandbox when running as root (the default user
-    # in the mscan container); --disable-dev-shm-usage avoids crashes from
-    # Docker's small default /dev/shm size.
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    # Headless Chrome's default UA string gets flagged by at least one source
-    # (exodus-privacy.eu.org silently serves an unrelated decoy page instead
-    # of the report), so present as an ordinary desktop browser.
     options.add_argument(
         "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -129,9 +128,7 @@ def make_selenium_driver():
     chrome_bin = os.environ.get("CHROME_BIN")
     if chrome_bin:
         options.binary_location = chrome_bin
-    # Selenium Manager (its default driver auto-downloader) doesn't support
-    # linux/aarch64, so point it at the distro-packaged chromedriver rather
-    # than letting it try to fetch one.
+
     chromedriver_bin = os.environ.get("CHROMEDRIVER_BIN")
     service = Service(executable_path=chromedriver_bin) if chromedriver_bin else None
     return webdriver.Chrome(options=options, service=service)
@@ -173,66 +170,78 @@ def main() -> int:
     if needs_browser:
         driver = make_selenium_driver()
 
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    out_path = Path(f"{args.out}_{args.country}.jsonl")
+    out_path = None
+    out_f = None
+    if args.out is not None:
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        out_path = Path(f"{args.out}_{args.country}.jsonl")
+        out_f = open(out_path, "a", encoding="utf-8")
 
     try:
-        with open(out_path, "a", encoding="utf-8") as out_f:
-            for app_id in app_ids:
-                print(f"\n=== {app_id} ===")
-                ds = pp = pt = nt = None
+        for app_id in app_ids:
+            print(f"\n=== {app_id} ===")
+            ds = pp = pt = nt = None
 
-                if "data_safety" in sources:
-                    try:
-                        ds = data_safety.collect(app_id, driver)
-                    except Exception as e:
-                        print(f"[data_safety] error for {app_id}: {e}")
-
-                if "privacy_policy" in sources:
-                    try:
-                        pp = privacy_policy.collect(app_id, driver, args.policy_dir)
-                    except Exception as e:
-                        print(f"[privacy_policy] error for {app_id}: {e}")
-
-                if "permissions_trackers" in sources:
-                    try:
-                        pt = permissions_trackers.collect(app_id, driver)
-                    except Exception as e:
-                        print(f"[permissions_trackers] error for {app_id}: {e}")
-
-                if "network_traffic" in sources:
-                    try:
-                        from sources import network_traffic as nt_mod
-                        nt = nt_mod.collect(app_id, args.country, device, d)
-                    except Exception as e:
-                        print(f"[network_traffic] error for {app_id}: {e}")
-
-                record = build_record(app_id, args.country, ds, pp, pt, nt)
+            if "data_safety" in sources:
                 try:
-                    record["metrics"] = compute_metrics(record)
+                    ds = data_safety.collect(app_id, driver)
                 except Exception as e:
-                    print(f"[metrics] could not compute for {app_id}: {e}")
-                    record["metrics"] = {}
-                record["collected_at"] = datetime.now(timezone.utc).isoformat()
+                    print(f"[data_safety] error for {app_id}: {e}")
 
+            if "privacy_policy" in sources:
+                try:
+                    pp = privacy_policy.collect(app_id, driver, args.policy_dir)
+                except Exception as e:
+                    print(f"[privacy_policy] error for {app_id}: {e}")
+
+            if "permissions_trackers" in sources:
+                try:
+                    pt = permissions_trackers.collect(app_id, driver)
+                except Exception as e:
+                    print(f"[permissions_trackers] error for {app_id}: {e}")
+
+            if "network_traffic" in sources:
+                try:
+                    from sources import network_traffic as nt_mod
+                    nt = nt_mod.collect(app_id, args.country, device, d)
+                except Exception as e:
+                    print(f"[network_traffic] error for {app_id}: {e}")
+
+            record = build_record(app_id, args.country, ds, pp, pt, nt)
+            try:
+                record["metrics"] = compute_metrics(record)
+            except Exception as e:
+                print(f"[metrics] could not compute for {app_id}: {e}")
+                record["metrics"] = {}
+            record["collected_at"] = datetime.now(timezone.utc).isoformat()
+
+            if out_f is not None:
                 out_f.write(json.dumps(record) + "\n")
                 out_f.flush()
+            else:
+                print(json.dumps(record, indent=2))
 
-                summary = (
-                    f"  data_safety_data_collected={'yes' if record['data_safety_data_collected'] else 'no'}  "
-                    f"trackers={record['num_trackers']}  "
-                    f"traffic_captured={record['traffic_captured']}"
-                )
-                if record["metrics"]:
-                    summary += f"  ADII={record['metrics']['ADII']:.0f}  " \
-                               f"DGI={record['metrics']['DGI']:.2f}  " \
-                               f"PCLR={record['metrics']['PCLR']:.2f}"
-                print(summary)
+            summary = (
+                f"  data_safety_data_collected={'yes' if record['data_safety_data_collected'] else 'no'}  "
+                f"trackers={record['num_trackers']}  "
+                f"traffic_captured={record['traffic_captured']}"
+            )
+            if record["metrics"]:
+                summary += f"  ADII={record['metrics']['ADII']:.0f}  " \
+                           f"DGI={record['metrics']['DGI']:.2f}  " \
+                           f"PCLR={record['metrics']['PCLR']:.2f}"
+            print(summary)
     finally:
         if driver is not None:
             driver.quit()
+        if out_f is not None:
+            out_f.close()
 
-    print(f"\n[DONE] wrote {out_path}")
+    if out_path is not None:
+        print(f"\n[DONE] wrote {out_path}")
+    else:
+        print(f"\n[DONE] {len(app_ids)} app(s) processed; no --out given, so "
+              f"nothing was written to disk (records printed above).")
     return 0
 
 

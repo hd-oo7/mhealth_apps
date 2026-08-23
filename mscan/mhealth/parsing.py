@@ -1,11 +1,6 @@
 """
 Parsing helpers for the serialized columns in the metrics table.
 
-Previously each of notebooks 01/06/07/08/09/10 carried its own copy of these
-functions. The copies had already drifted -- notebook 07's feature builder
-normalized frequency maps while notebook 01's did not, which silently produced
-two incompatible Adaptation Scores from the same input. This module is now
-the only implementation.
 """
 
 from __future__ import annotations
@@ -32,9 +27,6 @@ def _is_null(value) -> bool:
 
 def parse_token_set(value) -> set:
     """Parse a cell holding a list/set literal or a delimited string.
-
-    Accepts ``"['a', 'b']"``, ``"a,b"``, ``"a;b"``, or a real list/set.
-    Always returns lowercased, stripped tokens.
     """
     if _is_null(value):
         return set()
@@ -60,9 +52,6 @@ def parse_token_set(value) -> set:
 
 def parse_frequency_map(value) -> dict:
     """Parse ``"email:1;ip address:11;uuid:132"`` into ``{token: count}``.
-
-    Negative counts are clamped to zero. Unparseable entries are skipped rather
-    than silently coerced, so a malformed cell cannot masquerade as a zero.
     """
     if _is_null(value):
         return {}
@@ -89,14 +78,6 @@ def parse_frequency_map(value) -> dict:
 
 def normalize_map(mapping: dict) -> dict:
     """Scale a frequency map to sum to 1.
-
-    Used only when ``build_country_feature``/``compute_as`` are called with
-    ``normalize=True``: an opt-in variant that measures transmission
-    *composition* rather than volume (an app simply transmitting more data in
-    one country would otherwise score as adaptive even with an identical data
-    mix). Not the default -- see ``mhealth.metrics.build_country_feature`` for
-    why the paper's published AS figures use the unnormalized, volume-sensitive
-    formula instead.
     """
     total = sum(mapping.values())
     if total <= 0:
