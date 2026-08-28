@@ -1,7 +1,3 @@
-# Verified against these versions when regenerating the paper's Sec. 7/8
-# numbers and figures from data/mhealth_apps_metrics_anonymized.csv. KMeans
-# and the OLS/BH-FDR results in particular can shift slightly across major
-# library versions, so pin these rather than floating.
 pandas==2.3.3
 numpy==2.2.6
 scipy==1.15.3
@@ -10,5 +6,4 @@ statsmodels==0.14.6
 matplotlib==3.10.9
 seaborn==0.13.2
 
-# only needed to run the .ipynb notebooks (01-11) rather than the .py scripts
 jupyter
