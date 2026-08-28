@@ -124,20 +124,6 @@ def _install_ca_via_magisk_module(remote_name: str, local_der: Path) -> bool:
     """Fallback CA install for devices where `su` works but `adb root`
     doesn't (a Magisk-rooted Play Store image, not a true userdebug/eng
     build -- see docker/README.md's AVD setup section).
-
-    This device's /system is dm-verity-protected (system-as-root; verified
-    with `mount -o rw,remount` on this project's own test device, which
-    failed with "read-only file system" even under `su`): a live
-    remount+push, which is all the adb-root path above does, cannot work
-    here regardless of privilege level. Magisk's supported mechanism for
-    this is a module that overlays the file onto /system at boot without
-    touching the underlying verified block device, installed via
-    `magisk --install-module` (the plain-root path -- `su -c "cp ..."`
-    directly into /data/adb/modules/ -- was tried and denied: `su`'s shell
-    runs in a restricted SELinux domain that doesn't have write access to
-    Magisk's own module directory; only Magisk's own privileged installer
-    does). This needs a reboot to take effect, unlike the live adb-root
-    path, so this function waits for one.
     """
     import shutil
     import tempfile
@@ -186,15 +172,6 @@ def _install_ca_via_magisk_module(remote_name: str, local_der: Path) -> bool:
 
 
 def step_install_ca_system(check_only: bool) -> str:
-    """Install the CA into /system/etc/security/cacerts/, the same
-    system-trust mechanism this project's own emulator uses (confirmed:
-    hash-named .0 file, e.g. c8750f0d.0). Requires root -- either a true
-    userdebug/eng build (`adb root`) or a Magisk-rooted image (`su`, see
-    `_install_ca_via_magisk_module`); reports clearly rather than silently
-    falling back to a user-only cert if neither is available, since that is
-    known to be ignored by most apps' network security config on modern
-    Android.
-    """
     digest = _hash_old(MITM_CA_PEM)
     if not digest:
         print("[FAIL] Could not compute CA hash (is openssl installed?).")
@@ -277,9 +254,6 @@ def step_frida_server(check_only: bool) -> str:
           f"frida-server-{version}-android-{arch}.xz")
     print(f"[..] Downloading frida-server {version} for {arch} from {url}")
     local_xz = Path(f"/tmp/frida-server-{version}-{arch}.xz")
-    # curl (not urllib) -- GitHub's release-asset redirect target has been
-    # observed to reset urllib's connection outright (HTTP/2 quirk) while
-    # curl -L follows it without issue.
     dl = run(["curl", "-fsSL", "--retry", "5", "--retry-all-errors",
              "-o", str(local_xz), url])
     if dl.returncode != 0 or not local_xz.exists():
@@ -293,11 +267,6 @@ def step_frida_server(check_only: bool) -> str:
     adb("push", str(local_bin), FRIDA_SERVER_REMOTE, check=True)
     adb("shell", "chmod", "755", FRIDA_SERVER_REMOTE)
 
-    # frida-server needs to run as root for its instrumentation to work.
-    # `adb root` makes the whole shell session root, so a plain `nohup ... &`
-    # is enough there; on a Magisk-rooted (su-only) device it must be
-    # launched through `su -c` instead, or it starts as the unprivileged
-    # `shell` user and Frida's pinning bypass silently does nothing.
     if _adb_root_works():
         adb("shell", f"nohup {FRIDA_SERVER_REMOTE} >/dev/null 2>&1 &")
     elif _su_works():
