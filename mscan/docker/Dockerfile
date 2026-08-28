@@ -18,11 +18,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # --- system packages -------------------------------------------------------
 # chromium/chromium-driver: Selenium, for data_safety/privacy_policy/permissions_trackers
-# adb: Debian's android-tools package, NOT Google's platform-tools zip -- that
-#   zip only ships an x86_64 Linux binary, which forced --platform linux/amd64
-#   builds on Apple Silicon hosts and made chromium crash under QEMU emulation
-#   (missing SSE3). Debian's package is multi-arch, so the whole image now
-#   builds natively for whatever architecture `docker build` runs on.
+# adb: Debian's android-tools package, NOT Google's platform-tools zip 
 # xz-utils/curl: fetching frida-server at setup time
 RUN apt-get update && apt-get install -y --no-install-recommends \
         chromium chromium-driver \

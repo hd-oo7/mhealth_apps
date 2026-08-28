@@ -5,6 +5,7 @@ __pycache__/
 
 # generated output -- not part of the release
 mscan/results/
+mscan/data/
 figures/
 
 # data/ holds both the raw corpus (real app_id, not released -- see Ethics

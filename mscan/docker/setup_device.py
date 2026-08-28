@@ -89,13 +89,111 @@ def _hash_old(pem_path: Path) -> str | None:
     return result.stdout.strip().splitlines()[0]
 
 
+def _adb_root_works() -> bool:
+    result = adb("root")
+    return "cannot run as root" not in (result.stdout + result.stderr).lower()
+
+
+def _su_works() -> bool:
+    """True if a Magisk (or similar) `su` grants root non-interactively.
+
+    Distinct from `_adb_root_works`: Magisk grants root to `su -c ...`
+    invocations via its own daemon/policy, but does not unlock `adbd`
+    itself -- `adb root` still fails on the same device. A device can have
+    exactly one, both, or neither working.
+    """
+    result = adb("shell", "su", "-c", "id")
+    return "uid=0" in result.stdout
+
+
+def _wait_for_boot(timeout_s: int = 150) -> bool:
+    import time
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        devices = adb("devices").stdout
+        online = any(line.endswith("\tdevice") for line in devices.splitlines())
+        if online:
+            booted = adb("shell", "getprop", "sys.boot_completed").stdout.strip()
+            if booted == "1":
+                return True
+        time.sleep(3)
+    return False
+
+
+def _install_ca_via_magisk_module(remote_name: str, local_der: Path) -> bool:
+    """Fallback CA install for devices where `su` works but `adb root`
+    doesn't (a Magisk-rooted Play Store image, not a true userdebug/eng
+    build -- see docker/README.md's AVD setup section).
+
+    This device's /system is dm-verity-protected (system-as-root; verified
+    with `mount -o rw,remount` on this project's own test device, which
+    failed with "read-only file system" even under `su`): a live
+    remount+push, which is all the adb-root path above does, cannot work
+    here regardless of privilege level. Magisk's supported mechanism for
+    this is a module that overlays the file onto /system at boot without
+    touching the underlying verified block device, installed via
+    `magisk --install-module` (the plain-root path -- `su -c "cp ..."`
+    directly into /data/adb/modules/ -- was tried and denied: `su`'s shell
+    runs in a restricted SELinux domain that doesn't have write access to
+    Magisk's own module directory; only Magisk's own privileged installer
+    does). This needs a reboot to take effect, unlike the live adb-root
+    path, so this function waits for one.
+    """
+    import shutil
+    import tempfile
+    import time
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        module_dir = tmp / "mscanca"
+        certs_dir = module_dir / "system" / "etc" / "security" / "cacerts"
+        certs_dir.mkdir(parents=True)
+        shutil.copy(local_der, certs_dir / remote_name)
+        (module_dir / "module.prop").write_text(
+            "id=mscanca\n"
+            "name=mSCAN mitmproxy CA\n"
+            "version=v1\n"
+            "versionCode=1\n"
+            "author=mscan\n"
+            "description=Installs the mitmproxy CA into the system trust store"
+            " via Magisk overlay\n"
+        )
+        zip_path = tmp / "mscanca.zip"
+        shutil.make_archive(str(zip_path.with_suffix("")), "zip", module_dir)
+
+        remote_zip = "/data/local/tmp/mscanca_module.zip"
+        adb("shell", "rm", "-rf", "/data/local/tmp/mscanca_module.zip")
+        push = adb("push", str(zip_path), remote_zip)
+        if push.returncode != 0:
+            print(f"[FAIL] Could not push Magisk module zip: {push.stderr.strip()}")
+            return False
+
+        install = adb("shell", "su", "-c", f"magisk --install-module {remote_zip}")
+        if install.returncode != 0 or "done" not in install.stdout.lower():
+            print(f"[FAIL] `magisk --install-module` failed: "
+                  f"{(install.stdout + install.stderr).strip()}")
+            return False
+
+        print("[..] Module installed; rebooting device to apply the /system "
+              "overlay (this takes ~15-30s)...")
+        adb("reboot")
+        time.sleep(3)  # give the device a moment to actually go down before polling
+        if not _wait_for_boot():
+            print("[FAIL] Device did not come back online within the timeout "
+                  "after reboot.")
+            return False
+        return True
+
+
 def step_install_ca_system(check_only: bool) -> str:
     """Install the CA into /system/etc/security/cacerts/, the same
     system-trust mechanism this project's own emulator uses (confirmed:
-    hash-named .0 file, e.g. c8750f0d.0). Requires a rootable/userdebug
-    image; reports clearly rather than silently falling back if root isn't
-    available, since a user-cert-only install is known to be ignored by
-    most apps' network security config on modern Android.
+    hash-named .0 file, e.g. c8750f0d.0). Requires root -- either a true
+    userdebug/eng build (`adb root`) or a Magisk-rooted image (`su`, see
+    `_install_ca_via_magisk_module`); reports clearly rather than silently
+    falling back to a user-only cert if neither is available, since that is
+    known to be ignored by most apps' network security config on modern
+    Android.
     """
     digest = _hash_old(MITM_CA_PEM)
     if not digest:
@@ -112,29 +210,42 @@ def step_install_ca_system(check_only: bool) -> str:
         print(f"[--] CA not yet installed in system trust store (would push {remote_name}).")
         return "missing"
 
-    root_result = adb("root")
-    if "cannot run as root" in (root_result.stdout + root_result.stderr).lower():
-        print("[FAIL] `adb root` refused (device is a production/user build, not "
-              "userdebug/eng). System-level CA install needs a rootable AVD image; "
-              "see docker/README.md for how to create one. Skipping this step.")
-        return "needs_root"
-
-    import time
-    time.sleep(1)
-    adb("remount")
     local_der = MITM_HOME / remote_name
     conv = run(["openssl", "x509", "-inform", "PEM", "-outform", "DER",
                "-in", str(MITM_CA_PEM), "-out", str(local_der)])
     if conv.returncode != 0:
         print(f"[FAIL] PEM->DER conversion failed: {conv.stderr}")
         return "unknown"
-    push = adb("push", str(local_der), f"/system/etc/security/cacerts/{remote_name}")
-    if push.returncode != 0:
-        print(f"[FAIL] Could not push CA into system cacerts: {push.stderr.strip()}")
+
+    if _adb_root_works():
+        import time
+        time.sleep(1)
+        adb("remount")
+        push = adb("push", str(local_der), f"/system/etc/security/cacerts/{remote_name}")
+        if push.returncode != 0:
+            print(f"[FAIL] Could not push CA into system cacerts: {push.stderr.strip()}")
+            return "unknown"
+        adb("shell", "chmod", "644", f"/system/etc/security/cacerts/{remote_name}")
+        print(f"[OK] Installed CA as /system/etc/security/cacerts/{remote_name}")
+        return "installed"
+
+    if _su_works():
+        print("[..] `adb root` unavailable but Magisk `su` works; installing "
+              "the CA as a Magisk module instead.")
+        if _install_ca_via_magisk_module(remote_name, local_der):
+            verify = adb("shell", f"ls /system/etc/security/cacerts/{remote_name} 2>/dev/null")
+            if remote_name in verify.stdout:
+                print(f"[OK] Installed CA as /system/etc/security/cacerts/{remote_name} "
+                      "(via Magisk module).")
+                return "installed"
+        print("[FAIL] Magisk module CA install did not verify after reboot.")
         return "unknown"
-    adb("shell", "chmod", "644", f"/system/etc/security/cacerts/{remote_name}")
-    print(f"[OK] Installed CA as /system/etc/security/cacerts/{remote_name}")
-    return "installed"
+
+    print("[FAIL] Neither `adb root` nor `su` grants root on this device. "
+          "System-level CA install needs either a userdebug/eng AVD image or "
+          "a Magisk-rooted one with its Superuser 'Automatic response' set to "
+          "'Grant' (see docker/README.md). Skipping this step.")
+    return "needs_root"
 
 
 def step_frida_server(check_only: bool) -> str:
@@ -182,7 +293,20 @@ def step_frida_server(check_only: bool) -> str:
     adb("push", str(local_bin), FRIDA_SERVER_REMOTE, check=True)
     adb("shell", "chmod", "755", FRIDA_SERVER_REMOTE)
 
-    start = adb("shell", f"nohup {FRIDA_SERVER_REMOTE} >/dev/null 2>&1 &")
+    # frida-server needs to run as root for its instrumentation to work.
+    # `adb root` makes the whole shell session root, so a plain `nohup ... &`
+    # is enough there; on a Magisk-rooted (su-only) device it must be
+    # launched through `su -c` instead, or it starts as the unprivileged
+    # `shell` user and Frida's pinning bypass silently does nothing.
+    if _adb_root_works():
+        adb("shell", f"nohup {FRIDA_SERVER_REMOTE} >/dev/null 2>&1 &")
+    elif _su_works():
+        adb("shell", "su", "-c", f"nohup {FRIDA_SERVER_REMOTE} >/dev/null 2>&1 &")
+    else:
+        print("[FAIL] Neither `adb root` nor `su` grants root on this device; "
+              "frida-server needs root to instrument other processes.")
+        return "needs_root"
+
     import time
     time.sleep(1)
     running = adb("shell", "pgrep", "-f", "frida-server")

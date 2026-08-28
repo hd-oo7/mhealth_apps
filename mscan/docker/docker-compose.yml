@@ -1,30 +1,15 @@
 services:
   mscan:
     build:
-      context: ../..
-      dockerfile: mscan/docker/Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     image: mscan:latest
     environment:
-      # Talk to the *host's* adb server (which talks to your locally-running,
-      # already-logged-in emulator) instead of trying to run adb server
-      # inside the container. See docker/README.md for the one-time host
-      # setup this depends on (a second `adb -a -P 5038 nodaemon server
-      # start` bound to all interfaces -- plain `adb -a nodaemon server
-      # start` on 5037 gets fought over by Android Studio's own adb client,
-      # which respawns a localhost-only server the moment it dies).
-      #
-      # Two variables carry the same setting because two different adb
-      # clients read two different ones: the `adb` CLI honors
-      # ADB_SERVER_SOCKET, but uiautomator2's Python adbutils library (used
-      # by the network_traffic source) instead reads ANDROID_ADB_SERVER_HOST
-      # / ANDROID_ADB_SERVER_PORT. Both must point at the same place.
       - ADB_SERVER_SOCKET=tcp:host.docker.internal:5038
       - ANDROID_ADB_SERVER_HOST=host.docker.internal
       - ANDROID_ADB_SERVER_PORT=5038
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     extra_hosts:
-      # host.docker.internal is automatic on Docker Desktop (Mac/Windows);
-      # this line is what makes it resolve on Linux hosts too.
       - "host.docker.internal:host-gateway"
     ports:
       # Publishes the container's mitmproxy port to the host so the
@@ -33,8 +18,22 @@ services:
       - "8080:8080"
     volumes:
       - ../results:/app/mscan/results
-      - ../../data/network_traffic:/app/data/network_traffic
-      - ../../data/privacy_policies:/app/data/privacy_policies
+      - ../data/network_traffic:/app/data/network_traffic
+      - ../data/privacy_policies:/app/data/privacy_policies
+      # mitmproxy's CA subject name (CN=mitmproxy) -- and so its Android
+      # system-cacerts filename, which is a hash of the subject, not the key
+      # -- is the same across every fresh install, but the actual key pair
+      # is regenerated at random each time mitmdump starts with no existing
+      # CA. Without this volume, every `docker run --rm` (no persistence)
+      # gets its own new key while docker/setup_device.py's install check
+      # only looks for a same-named file on the device and reports
+      # "already installed" -- so interception silently breaks (cert/key
+      # mismatch) on every run after the first. Confirmed empirically: two
+      # separate container runs produced certs with identical subject_hash_old
+      # (c8750f0d) but different SHA1 fingerprints. This volume makes the
+      # container reuse the same CA every run, matching whatever's already
+      # trusted on the device.
+      - ../data/mitmproxy_ca:/root/.mitmproxy
     # --out is a filename PREFIX, not a directory (mscan writes
     # <out>_<country>.jsonl) -- point it inside the mounted results/ volume
     # above so output actually survives the container exiting, and mount
